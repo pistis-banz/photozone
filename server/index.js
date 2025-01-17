@@ -19,6 +19,7 @@ app.use(
       /^\/user\/login/,
       /^\/user\/username\/.*/,
       /^\/user\/email\/.*/,
+      /^\/user\/getAvatar\/.*/,
     ],
   })
 );

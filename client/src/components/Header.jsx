@@ -1,12 +1,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import userDataContext from "@/contexts/userData.context";
 import { Heart, Home, Search } from "lucide-react";
-import { useContext } from "react";
 import { Link } from "react-router-dom";
 
 export default function Navbar() {
-  const { username } = useContext(userDataContext);
-  console.log(useContext(userDataContext));
+  // const { user } = useContext(AuthContext);
+  // const { username } = user; =
+  const username = "aaa";
   return (
     <header className="flex items-center justify-between w-screen p-2 px-5 bg-white shadow-md ">
       {/* Titre du Site */}
@@ -35,9 +34,12 @@ export default function Navbar() {
       </nav>
 
       {/*parametre du Profil de l'utilisateur */}
+
       <button className="flex items-center justify-center px-2 space-x-2 rounded-full flex-p-1">
         <div>
-          <p className="text-sm text-[#a2a2a2] font-semibold">{username} </p>
+          <p className="text-sm text-[#a2a2a2] font-semibold">
+            {username || "pitchou"}
+          </p>
         </div>
         <Avatar className=" size-6">
           <AvatarImage src="https://github.com/shadcn.png" />

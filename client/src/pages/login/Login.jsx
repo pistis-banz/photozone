@@ -11,25 +11,41 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
+
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Toaster, toast } from "sonner";
 
 export default function Login() {
+  // useEffect(() => {
+  //   axios.defaults.headers.common["Authorization"] =
+  //     "bearer " + localStorage.getItem("token");
+  //   axios
+  //     .post("http://localhost:3000/user/avatar/" + "6786b1121ad36a5207b4b44e")
+  //     .then((response) => {
+  //       console.log(response.data);
+  //     })
+  //     .catch((error) => {
+  //       console.log("error : " + error);
+  //     });
+  // }, []);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   const onSubmit = (data) => {
     // Ajoutez ici la logique de connexion
     axios
       .post("http://localhost:3000/user/login", data)
       .then((response) => {
+        console.log(response.data.token);
         localStorage.setItem("token", response.data.token);
-        navigate("/");
+        axios.defaults.headers.common["Authorization"] =
+          "bearer " + localStorage.getItem("token");
       })
       .catch((error) => {
         if (error.status === 401) {

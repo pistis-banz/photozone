@@ -218,7 +218,28 @@ exports.emailVerify = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
-}
+};
+
+// recuperation de l'avatar d'un utilisateur
+exports.getAvatar = async (req, res) => {
+  try {
+    const user = await usersModel.findById(req.params.id);
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "this user does not exist" });
+
+    const filePath = path.join(user.avatar);
+
+    res.status(201).sendFile(filePath, (error) => {
+      if (error) {
+        res.status(error.status).end();
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 // Mettre à jour un utilisateur
 exports.updateUser = async (req, res) => {
   try {

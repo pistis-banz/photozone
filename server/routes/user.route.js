@@ -66,7 +66,8 @@ const {
   createUser,
   login,
   usernameVerify,
-  emailVerify
+  emailVerify,
+  getAvatar,
 } = require("../controllers/user.controller.js");
 const multer = require("multer");
 const upload = require("../middleware/uploadProfilImageMiddleware");
@@ -74,9 +75,10 @@ const upload = require("../middleware/uploadProfilImageMiddleware");
 router.get("/", async (req, res) => {});
 router.get("/username/:id", usernameVerify);
 router.get("/email/:id", emailVerify);
-router.post("/login", login);
 
+router.post("/login", login);
 router.post("/register", upload.single("avatar"), createUser);
+router.post("/avatar/:id",getAvatar);
 
 router.put("/", async (req, res) => {});
 

@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import App from "./App.jsx";
 import RouteProtection from "./components/routeProtection";
+import AuthProvider from "./contexts/auth.context.jsx";
 import "./index.css";
 import PageNotFound from "./pages/error/pageNotFound";
 import Feed from "./pages/feed/Feed.jsx";
@@ -56,10 +57,12 @@ const route = createBrowserRouter([
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <QueryClientProvider client={new QueryClient()}>
-      <Suspense fallback={<div>loading...</div>}>
-        <RouterProvider router={route} />
-      </Suspense>
-    </QueryClientProvider>
+   
+      <QueryClientProvider client={new QueryClient()}>
+        <Suspense fallback={<div>loading...</div>}>
+          <RouterProvider router={route} />
+        </Suspense>
+      </QueryClientProvider>
+
   </StrictMode>
 );

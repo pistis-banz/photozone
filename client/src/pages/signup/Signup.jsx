@@ -16,7 +16,7 @@ import axios from "axios";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Toaster, toast } from "sonner";
 
 export default function Signup() {
@@ -27,9 +27,8 @@ export default function Signup() {
   } = useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [usernameQuery, setUsernameQuery] = useState("");
+  const [emailQuery, setEmailQuery] = useState("");
   const [selectedImage, setSelectedImage] = useState(account);
-
-  const navigate = useNavigate();
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -83,6 +82,19 @@ export default function Signup() {
       });
   }, [useDebouncing(usernameQuery, 500)]);
 
+  useEffect(() => {
+    axios
+      .get("http://localhost:3000/user/email/" + emailQuery)
+      .then(function (response) {
+        console.log(response.data);
+      })
+      .catch(function (error) {
+        if (error.response.status === 400) {
+          toast.error("cet adresse mail est deja utilisé");
+        }
+      });
+  }, [useDebouncing(emailQuery, 500)]);
+
   const onSubmit = function (data) {
     setIsLoading(true);
     // logique de connexion
@@ -108,19 +120,13 @@ export default function Signup() {
           "Content-Type": "multipart/form-data",
         },
       })
-      .then(function (response) {
+      .then(function () {
         setIsLoading(false);
-        if (response.data.token) {
-          const token = JSON.stringify(response.data.token);
-          localStorage.setItem("token", token);
-          navigate("/");
-        } else {
-          localStorage.removeItem("token");
-        }
+        
       })
-      .catch(function (error) {
+      .catch(function () {
         setIsLoading(false);
-        console.log(error);
+        toast.error("une erreur s'est produite");
       });
   };
 
@@ -231,8 +237,8 @@ export default function Signup() {
             <input
               type="email"
               id="email"
-              onBlur={(e) => {
-                console.log(e);
+              onInput={(e) => {
+                setEmailQuery(e.target.value);
               }}
               placeholder="votreemail@gmail.com"
               {...register("email", { require: true, pattern: /^\S+@\S+$/i })}
