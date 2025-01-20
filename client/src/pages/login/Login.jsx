@@ -12,40 +12,40 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
 
+import { useAuthStore } from "@/stores/auth.store";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Toaster, toast } from "sonner";
 
 export default function Login() {
-  // useEffect(() => {
-  //   axios.defaults.headers.common["Authorization"] =
-  //     "bearer " + localStorage.getItem("token");
-  //   axios
-  //     .post("http://localhost:3000/user/avatar/" + "6786b1121ad36a5207b4b44e")
-  //     .then((response) => {
-  //       console.log(response.data);
-  //     })
-  //     .catch((error) => {
-  //       console.log("error : " + error);
-  //     });
-  // }, []);
+  const login = useAuthStore((state) => state.login);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const onSubmit = (data) => {
     // Ajoutez ici la logique de connexion
+    setIsLoading(true);
+
     axios
       .post("http://localhost:3000/user/login", data)
       .then((response) => {
-        console.log(response.data.token);
-        localStorage.setItem("token", response.data.token);
-        axios.defaults.headers.common["Authorization"] =
-          "bearer " + localStorage.getItem("token");
+        try {
+          login(response.data.token);
+        } catch {
+          toast.error("une erreur s'est produite lors de la connexion");
+        } finally {
+          toast.success(`vous etes connecté`);
+          setIsLoading(false);
+          navigate("/");
+        }
       })
       .catch((error) => {
         if (error.status === 401) {
@@ -118,17 +118,19 @@ export default function Login() {
                     veuillez insérer votre mot de passe valide
                   </p>
                 )}
-                <Button
-                  className="text-white cursor-pointer bg-primary"
-                  asChild
-                  onclick={() => {
-                    toast({
-                      title: "Uh oh! Something went wrong.",
-                    });
-                  }}
-                >
-                  <input type="submit" value="poster" />
-                </Button>
+                {!isLoading ? (
+                  <Button
+                    className="text-white cursor-pointer bg-primary"
+                    asChild
+                  >
+                    <input type="submit" value="poster" />
+                  </Button>
+                ) : (
+                  <Button disabled>
+                    <Loader2 className="animate-spin" />
+                    Please wait
+                  </Button>
+                )}
               </form>
             </CardContent>
             <CardFooter>

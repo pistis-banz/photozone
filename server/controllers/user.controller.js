@@ -222,6 +222,7 @@ exports.emailVerify = async (req, res) => {
 
 // recuperation de l'avatar d'un utilisateur
 exports.getAvatar = async (req, res) => {
+  console.log("get");
   try {
     const user = await usersModel.findById(req.params.id);
     if (!user)
