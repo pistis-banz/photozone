@@ -1,4 +1,3 @@
-import { getAvatar } from "@/utils/getAvatar";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -19,6 +18,29 @@ export const useAuthStore = create(
           return null;
         }
       },
+      // fonction de recuperation de l'avatar
+      getAvatar: async (id, token) => {
+        try {
+          const response = await fetch(
+            `http://localhost:3000/user/avatar/${id}`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `bearer ${token}`,
+              },
+            }
+          );
+          if (response.ok) {
+            const file = await response.blob();
+            return file;
+          } else {
+            throw new Error("Échec de la récupération de l'avatar");
+          }
+        } catch (error) {
+          console.error("Erreur lors de la récupération de l'avatar : ", error);
+          return null;
+        }
+      },
       // Fonction pour connecter l'utilisateur
       login: async (jwtToken) => {
         const decodeToken = get().decodeToken;
@@ -29,6 +51,7 @@ export const useAuthStore = create(
         } catch (error) {
           console.log(error);
         }
+        const getAvatar = get().getAvatar;
 
         const file = await getAvatar(userInfo.id, jwtToken);
         const reader = new FileReader();
@@ -62,7 +85,6 @@ export const useAuthStore = create(
         const user = (state) => state.user;
 
         if (jwtToken && user) {
-
           if (user == null) {
             set({
               token: jwtToken,

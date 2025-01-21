@@ -39,12 +39,16 @@ export default function Login() {
       .then((response) => {
         try {
           login(response.data.token);
+          console.log(response);
         } catch {
           toast.error("une erreur s'est produite lors de la connexion");
         } finally {
           toast.success(`vous etes connecté`);
           setIsLoading(false);
-          navigate("/");
+
+          setTimeout(() => {
+            navigate("/");
+          }, 500);
         }
       })
       .catch((error) => {

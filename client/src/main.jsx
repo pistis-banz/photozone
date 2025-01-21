@@ -8,8 +8,8 @@ import "./index.css";
 import PageNotFound from "./pages/error/pageNotFound";
 import Feed from "./pages/feed/Feed.jsx";
 import Like from "./pages/like/Like.jsx";
-import Login from "./pages/login/Login.jsx";
-import SignUp from "./pages/signup/SignUp.jsx";
+import Login from "./pages/authentification/Login.jsx";
+import SignUp from "./pages/authentification/Signup.jsx";
 
 const route = createBrowserRouter([
   {

@@ -12,14 +12,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import useDebouncing from "@/hooks/usedeboucing";
+import { useAuthStore } from "@/stores/auth.store";
 import axios from "axios";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Toaster, toast } from "sonner";
 
 export default function Signup() {
+  const login = useAuthStore((state) => state.login);
   const {
     register,
     handleSubmit,
@@ -29,6 +31,7 @@ export default function Signup() {
   const [usernameQuery, setUsernameQuery] = useState("");
   const [emailQuery, setEmailQuery] = useState("");
   const [selectedImage, setSelectedImage] = useState(account);
+  const navigate = useNavigate();
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -55,26 +58,11 @@ export default function Signup() {
       setSelectedImage(URL.createObjectURL(file));
     }
   };
-  // const handleEmailVerify = (e) => {
-  //   console.log(e.target.value);
-  //   axios
-  //     .get("http://localhost:3000/user/email/" + e.target.value)
-  //     .then(function (response) {
-  //       console.log(response.data);
-  //     })
-  //     .catch(function (error) {
-  //       if (error.response.status === 400) {
-  //         toast.error("ce email est deja utilisé");
-  //       }
-  //     });
-  // };
 
   useEffect(() => {
     axios
       .get("http://localhost:3000/user/username/" + usernameQuery)
-      .then(function (response) {
-        console.log(response.data);
-      })
+      .then(function () {})
       .catch(function (error) {
         if (error.response.status === 400) {
           toast.error("ce nom d'utilisateur est deja utilisé");
@@ -85,9 +73,7 @@ export default function Signup() {
   useEffect(() => {
     axios
       .get("http://localhost:3000/user/email/" + emailQuery)
-      .then(function (response) {
-        console.log(response.data);
-      })
+      .then(function () {})
       .catch(function (error) {
         if (error.response.status === 400) {
           toast.error("cet adresse mail est deja utilisé");
@@ -96,7 +82,8 @@ export default function Signup() {
   }, [useDebouncing(emailQuery, 500)]);
 
   const onSubmit = function (data) {
-    setIsLoading(true);
+    setIsLoading(true); // debut de chargement
+
     // logique de connexion
 
     const formData = new FormData();
@@ -110,22 +97,30 @@ export default function Signup() {
     formData.append("gender", data.gender);
     formData.append("avatar", data.avatar[0]);
 
-    // var {isLoading, error, result} = useQuery('fetchData', () => { fetch("http://localhost:3000/user/register", { method: "POST", headers: {
-    //   "Content-Type": "multipart/form-data",
-    // }, body: formData}).then(res => res.json()) })
-
     axios
       .post("http://localhost:3000/user/register", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       })
-      .then(function () {
-        setIsLoading(false);
-        
+      .then((response) => {
+        setIsLoading(false); // fin du chargement
+
+        try {
+          login(response.data.token);
+        } catch {
+          toast.error("une erreur s'est produite lors de la connexion");
+        } finally {
+          toast.success(`vous etes connecté`);
+          setIsLoading(false);
+
+          setTimeout(() => {
+            navigate("/");
+          }, 500);
+        }
       })
       .catch(function () {
-        setIsLoading(false);
+        setIsLoading(false); // fin du chargement
         toast.error("une erreur s'est produite");
       });
   };

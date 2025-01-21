@@ -120,7 +120,7 @@ module.exports.login = async (req, res) => {
 // Créer un utilisateur
 module.exports.createUser = async (req, res) => {
   // controle des données
-  console.log("debug1");
+
   if (
     !req.body.email ||
     !req.body.password ||
@@ -135,7 +135,7 @@ module.exports.createUser = async (req, res) => {
 
   let { email, password, username, firstname, lastname, gender, birthdate } =
     req.body;
-  console.log("debug2");
+
   firstname = firstname.toLowerCase();
   firstname = firstname.trim();
   lastname = lastname.toLowerCase();
@@ -151,7 +151,7 @@ module.exports.createUser = async (req, res) => {
   if (existingUser) {
     return res.status(400).json({ message: "L'email est déjà utilisé." });
   }
-  console.log("debug3");
+  
   if (gender !== "male" && gender !== "female") {
     return res.status(400).json({ message: "genre incorrect" });
   }
@@ -159,10 +159,11 @@ module.exports.createUser = async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, salt);
 
   const avatar = req.file ? req.file.path : null;
-  console.log("debug4");
+  
   // creation de la miniature de l'image
   if (req.file) {
-    const image = await sharp(req.file.path)
+    const image = await sharp(req.file.path);
+      image
       .resize(200, 200)
       .toFile(
         path.join(
@@ -222,7 +223,6 @@ exports.emailVerify = async (req, res) => {
 
 // recuperation de l'avatar d'un utilisateur
 exports.getAvatar = async (req, res) => {
-  console.log("get");
   try {
     const user = await usersModel.findById(req.params.id);
     if (!user)
