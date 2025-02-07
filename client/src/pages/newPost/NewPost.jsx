@@ -15,14 +15,18 @@ import { useForm } from "react-hook-form";
 
 export default function NewPost() {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [open, setOpen] = useState(false);
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm();
+
   const onSubmit = (data) => {
     console.log(data);
+    setOpen(false);
   };
 
   const handleImageUpload = (e) => {
@@ -32,13 +36,28 @@ export default function NewPost() {
       setSelectedImage(URL.createObjectURL(file));
     }
   };
-
+  console.log(open);
   return (
     <div>
       {/* boite de dialogue du formulaire */}
-      <Dialog>
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            reset();
+            setSelectedImage(null);
+
+            setOpen(false);
+          }
+        }}
+      >
         <DialogTrigger asChild>
-          <button className="fixed flex items-center justify-center font-bold text-center text-white transition-all rounded-full right-2 bottom-2 size-12 bg-primary bg-gradient-to-r from-red-500 to-pink-500 hover:bg-gradient-to-r hover:from-pink-500 hover:to-red-500 active:bg-red-500">
+          <button
+            onClick={() => {
+              setOpen(true);
+            }}
+            className="fixed flex items-center justify-center font-bold text-center text-white transition-all rounded-full right-2 bottom-2 size-12 bg-primary bg-gradient-to-r from-red-500 to-pink-500 hover:bg-gradient-to-r hover:from-pink-500 hover:to-red-500 active:bg-red-500"
+          >
             <Plus className="font-black" />
           </button>
         </DialogTrigger>
@@ -80,7 +99,7 @@ export default function NewPost() {
                       <img
                         src={selectedImage}
                         alt="Aperçu de l'image"
-                        className="object-cover mb-4 rounded-md size-72"
+                        className="object-fill mb-4 rounded-md size-72"
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center w-full h-32 text-center text-gray-500">
@@ -94,7 +113,7 @@ export default function NewPost() {
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={handleImageUpload}
+                        onInput={handleImageUpload}
                         id="file"
                         {...register("file", { required: true })}
                       />

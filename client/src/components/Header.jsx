@@ -38,11 +38,13 @@ export default function Navbar() {
 
       {/*parametre du Profil de l'utilisateur */}
 
-      <button className="flex items-center justify-center px-2 space-x-2 rounded-full flex-p-1">
+      <button className="flex items-center justify-between w-32 p-1 px-2 space-x-2 transition-all border-2 rounded-full shadow-md hover:bg-pink-100 active:bg-primary">
         <div>
-          <p className="text-sm text-[#a2a2a2] font-semibold">{username}</p>
+          <p className="text-sm text-[#a2a2a2] font-semibold hover:text-white active:text-white">
+            {username || "utilisateur"}
+          </p>
         </div>
-        <Avatar className=" size-6">
+        <Avatar className=" size-7">
           <AvatarImage src={avatarUrl || "/account.png"} />
         </Avatar>
       </button>

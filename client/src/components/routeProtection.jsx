@@ -2,7 +2,9 @@ import { useAuthStore } from "@/stores/auth.store";
 import { Navigate } from "react-router-dom";
 
 export default function RouteProtection({ children }) {
-  const isLogged = useAuthStore((state) => state.isLogged);
+  const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
+  const isLoggIn = token && user;
 
-  return isLogged ? children : <Navigate to="/login" />;
+  return isLoggIn ? children : <Navigate to="/login" />;
 }

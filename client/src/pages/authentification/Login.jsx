@@ -23,7 +23,7 @@ export default function Login() {
   const login = useAuthStore((state) => state.login);
   const [isLoading, setIsLoading] = useState(false);
 
-  const {
+  const { 
     register,
     handleSubmit,
     formState: { errors },

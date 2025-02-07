@@ -1,5 +1,10 @@
-import account from "@/assets/account.png";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
+import account from "@/assets/account.png";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,125 +17,139 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import useDebouncing from "@/hooks/usedeboucing";
-import { useAuthStore } from "@/stores/auth.store";
-import axios from "axios";
-import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
-import { Toaster, toast } from "sonner";
+
+const validateFile = (file) => {
+  const allowedExtensions = ["jpg", "jpeg", "png"];
+  const maxSize = 5 * 1024 * 1024;
+
+  if (file.size > maxSize) {
+    return "La taille de l'image est trop grande (max 5 MB)";
+  }
+
+  const fileExtension = file.name.split(".").pop().toLowerCase();
+  if (!allowedExtensions.includes(fileExtension)) {
+    return "Format d'image non autorisé (jpg, jpeg, png uniquement)";
+  }
+
+  return null;
+};
 
 export default function Signup() {
-  const login = useAuthStore((state) => state.login);
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(account);
+  const [usernameQuery, setUsernameQuery] = useState("");
+  const [emailQuery, setEmailQuery] = useState("");
+
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm();
-  const [isLoading, setIsLoading] = useState(false);
-  const [usernameQuery, setUsernameQuery] = useState("");
-  const [emailQuery, setEmailQuery] = useState("");
-  const [selectedImage, setSelectedImage] = useState(account);
-  const navigate = useNavigate();
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
+    const validationError = validateFile(file);
 
-    if (file) {
-      // verification du poid de l'image
-      const fileSize = file.size;
-
-      if (fileSize > 5 * 1024 * 1024) {
-        e.target.value = null;
-        toast.error("La taille de l'image est trop importante");
-        return;
-      }
-
-      const allowedExtension = ["jpg", "jpeg", "png"];
-      const fileExtension = file.name.split(".").pop().toLowerCase;
-
-      if (allowedExtension.includes(fileExtension)) {
-        e.target.value = null;
-        toast.error("ce format n'est pas autorisé");
-        return;
-      }
-
-      setSelectedImage(URL.createObjectURL(file));
+    if (validationError) {
+      e.target.value = null;
+      toast.error(validationError);
+      return;
     }
+
+    setSelectedImage(URL.createObjectURL(file));
   };
 
   useEffect(() => {
-    axios
-      .get("http://localhost:3000/user/username/" + usernameQuery)
-      .then(function () {})
-      .catch(function (error) {
-        if (error.response.status === 400) {
-          toast.error("ce nom d'utilisateur est deja utilisé");
-        }
-      });
+    const controller = new AbortController();
+
+    if (usernameQuery) {
+      fetch(`http://localhost:3000/user/username/${usernameQuery}`, {
+        method: "GET",
+        signal: controller.signal,
+      })
+        .then((response) => {
+          if (!response.ok && response.status === 400) {
+            setError("username", {
+              type: "manual",
+              message: "Ce nom d'utilisateur est déjà utilisé",
+            });
+          }
+        })
+        .catch((error) => {
+          if (error.name !== "AbortError") {
+            console.error(error);
+          }
+        });
+    }
+
+    return () => controller.abort();
   }, [useDebouncing(usernameQuery, 500)]);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:3000/user/email/" + emailQuery)
-      .then(function () {})
-      .catch(function (error) {
-        if (error.response.status === 400) {
-          toast.error("cet adresse mail est deja utilisé");
-        }
-      });
+    const controller = new AbortController();
+
+    if (emailQuery) {
+      fetch(`http://localhost:3000/user/email/${emailQuery}`, {
+        method: "GET",
+        signal: controller.signal,
+      })
+        .then((response) => {
+          if (!response.ok && response.status === 400) {
+            setError("email", {
+              type: "manual",
+              message: "Cette adresse email est déjà utilisée",
+            });
+          }
+        })
+        .catch((error) => {
+          if (error.name !== "AbortError") {
+            console.error(error);
+          }
+        });
+    }
+
+    return () => controller.abort();
   }, [useDebouncing(emailQuery, 500)]);
 
-  const onSubmit = function (data) {
-    setIsLoading(true); // debut de chargement
-
-    // logique de connexion
+  const onSubmit = (data) => {
+    setIsLoading(true);
 
     const formData = new FormData();
-
-    formData.append("email", data.email);
-    formData.append("password", data.password);
-    formData.append("username", data.username);
-    formData.append("firstname", data.firstname);
-    formData.append("lastname", data.lastname);
-    formData.append("birthdate", data.birthdate);
-    formData.append("gender", data.gender);
+    Object.keys(data).forEach((key) => formData.append(key, data[key]));
     formData.append("avatar", data.avatar[0]);
 
-    axios
-      .post("http://localhost:3000/user/register", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
-      .then((response) => {
-        setIsLoading(false); // fin du chargement
+    fetch("http://localhost:3000/user/register", {
+      method: "POST",
+      body: formData,
+    })
+      .then(async (response) => {
+        setIsLoading(false);
 
-        try {
-          login(response.data.token);
-        } catch {
-          toast.error("une erreur s'est produite lors de la connexion");
-        } finally {
-          toast.success(`vous etes connecté`);
-          setIsLoading(false);
-
-          setTimeout(() => {
-            navigate("/");
-          }, 500);
+        if (response.ok) {
+          toast.success("Compte créé avec succès !");
+          toast.success("vous pouvez maintenant vous connectez");
+          navigate("/login");
+        } else {
+          const errorData = await response.json();
+          toast.error(errorData.message || "Une erreur s'est produite");
         }
       })
-      .catch(function () {
-        setIsLoading(false); // fin du chargement
-        toast.error("une erreur s'est produite");
+      .catch(() => {
+        setIsLoading(false);
+        toast.error("Une erreur s'est produite lors de l'inscription");
       });
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-rose-50">
-      <Card className="w-[350px]">
-        <CardHeader>
-          <CardTitle>Créer un compte</CardTitle>
-          <CardDescription>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
+      <Card className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-gray-800">
+            Créer un compte
+          </CardTitle>
+          <CardDescription className="mt-2 text-sm text-gray-500">
             Remplissez le formulaire ci-dessous pour vous inscrire.
           </CardDescription>
         </CardHeader>
@@ -138,227 +157,147 @@ export default function Signup() {
           <form
             onSubmit={handleSubmit(onSubmit)}
             encType="multipart/form-data"
-            className="flex flex-col flex-wrap justify-center space-y-4"
+            className="space-y-6"
           >
-            {/* creation du bouton de la photo de profil */}
-            <div className="flex flex-col">
-              <label
-                htmlFor="avatar"
-                className="flex flex-col items-center justify-center cursor-pointer"
-              >
+            <div className="flex flex-col items-center">
+              <label htmlFor="avatar" className="cursor-pointer">
                 <img
                   src={selectedImage}
                   alt="avatar"
-                  className="object-cover border-2 border-gray-300 rounded-full h-28 w-28"
-                />
-                <input
-                  accept=".jpg, .jpeg, .png"
-                  id="avatar"
-                  className="hidden"
-                  onInput={handleImageUpload}
-                  type="file"
-                  name="avatar"
-                  {...register("avatar", { required: false })}
+                  className="border-4 border-dashed rounded-full w-28 h-28"
                 />
               </label>
-
+              <input
+                id="avatar"
+                type="file"
+                className="hidden"
+                accept=".jpg,.jpeg,.png"
+                {...register("avatar", { required: "L'avatar est requis" })}
+                onInput={handleImageUpload}
+              />
               {errors.avatar && (
-                <p className="text-red-500">* {errors.avatar.message}</p>
+                <p className="text-xs text-red-500">{errors.avatar.message}</p>
               )}
             </div>
-            <Label
-              htmlFor="username"
-              className="text-sm font-medium text-gray-700"
-            >
-              nom d&apos;utilisateur
-            </Label>
-            <Input
-              type="text"
-              id="username"
-              onInput={(e) => {
-                setUsernameQuery(e.target.value);
-              }}
-              placeholder="votre nom d'utilisateur"
-              {...register("username", { require: true })}
-              className="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-              required
-            />
-            {errors.username && (
-              <p className="text-red-500">veuillez inserer votre pseudo</p>
-            )}
 
-            <Label
-              htmlFor="firstname"
-              className="text-sm font-medium text-gray-700"
-            >
-              prénom
-            </Label>
-            <Input
-              type="text"
-              id="firstname"
-              placeholder="votre prénom"
-              {...register("firstname", { require: true })}
-              className="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-              required
-            />
-            {errors.firstname && (
-              <p className="text-red-500">veuillez inserer votre prénom</p>
-            )}
+            <div>
+              <Label htmlFor="firstname">Prénom</Label>
+              <Input
+                id="firstname"
+                placeholder="Prénom"
+                {...register("firstname", { required: "Ce champ est requis" })}
+              />
+              {errors.firstname && (
+                <p className="text-xs text-red-500">
+                  {errors.firstname.message}
+                </p>
+              )}
+            </div>
 
-            <Label
-              htmlFor="lastname"
-              className="text-sm font-medium text-gray-700"
-            >
-              nom
-            </Label>
-            <Input
-              type="text"
-              id="lastname"
-              placeholder="votre nom"
-              {...register("lastname", { require: true })}
-              className="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-              required
-            />
-            {errors.lastname && (
-              <p className="text-red-500">veuillez inserer votre nom</p>
-            )}
+            <div>
+              <Label htmlFor="lastname">Nom</Label>
+              <Input
+                id="lastname"
+                placeholder="Nom"
+                {...register("lastname", { required: "Ce champ est requis" })}
+              />
+              {errors.lastname && (
+                <p className="text-xs text-red-500">
+                  {errors.lastname.message}
+                </p>
+              )}
+            </div>
 
-            <Label
-              htmlFor="email"
-              className="text-sm font-medium text-gray-700"
-            >
-              email
-            </Label>
-            <input
-              type="email"
-              id="email"
-              onInput={(e) => {
-                setEmailQuery(e.target.value);
-              }}
-              placeholder="votreemail@gmail.com"
-              {...register("email", { require: true, pattern: /^\S+@\S+$/i })}
-              className="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-              required
-            />
-            {errors.email && (
-              <p className="text-red-500">veuillez inserer votre email</p>
-            )}
+            <div>
+              <Label htmlFor="birthdate">Date de naissance</Label>
+              <Input
+                id="birthdate"
+                type="date"
+                {...register("birthdate", { required: "Ce champ est requis" })}
+              />
+              {errors.birthdate && (
+                <p className="text-xs text-red-500">
+                  {errors.birthdate.message}
+                </p>
+              )}
+            </div>
 
-            <Label
-              htmlFor="birthdate"
-              className="text-sm font-medium text-gray-700"
-            >
-              votre sexe
-            </Label>
-            <label htmlFor="male">homme</label>
-            <Input
-              type="radio"
-              id="male"
-              {...register("gender", {
-                required: true,
-              })}
-              value="male"
-              className=""
-              required
-            />
-            <label htmlFor="female">femme</label>
-            <Input
-              id="female"
-              type="radio"
-              {...register("gender", {
-                required: true,
-              })}
-              value="female"
-              className=""
-              required
-            />
+            <div>
+              <Label htmlFor="gender">Sexe</Label>
+              <select
+                id="gender"
+                {...register("gender", { required: "Ce champ est requis" })}
+                className="input-primary"
+              >
+                <option value="">Sélectionnez</option>
+                <option value="male">Homme</option>
+                <option value="female">Femme</option>
+                <option value="other">Autre</option>
+              </select>
+              {errors.gender && (
+                <p className="text-xs text-red-500">{errors.gender.message}</p>
+              )}
+            </div>
 
-            <Label
-              htmlFor="birthdate"
-              className="text-sm font-medium text-gray-700"
-            >
-              votre date de naissance
-            </Label>
-            <Input
-              type="date"
-              id="birthdate"
-              {...register("birthdate", {
-                required: true,
-              })}
-              className="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-              required
-            />
-            {errors.birthdate && (
-              <p className="text-red-500">
-                veuillez inserer votre date de naissance
-              </p>
-            )}
+            <div>
+              <Label htmlFor="username">Nom d'utilisateur</Label>
+              <Input
+                id="username"
+                placeholder="Nom d'utilisateur"
+                onInput={(e) => setUsernameQuery(e.target.value)}
+                {...register("username", { required: "Ce champ est requis" })}
+              />
+              {errors.username && (
+                <p className="text-xs text-red-500">
+                  {errors.username.message}
+                </p>
+              )}
+            </div>
 
-            <Label
-              htmlFor="password"
-              className="text-sm font-medium text-gray-700"
-            >
-              password
-            </Label>
-            <Input
-              type="password"
-              id="password"
-              placeholder="inserer le mot de passe"
-              {...register("password", {
-                required: true,
-              })}
-              className="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-              required
-            />
-            {errors.password && (
-              <p className="text-red-500">
-                veuillez créer un mot de passe valide
-              </p>
-            )}
-            <Label
-              htmlFor="confirmPassword"
-              className="text-sm font-medium text-gray-700"
-            >
-              confirm password
-            </Label>
-            <Input
-              type="text"
-              id="confirmPassword"
-              placeholder="confirmer le mot de passe"
-              {...register("confirmPassword", {
-                required: true,
-              })}
-              className="w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-              required
-            />
-            {errors.confirmPassword && (
-              <p className="text-red-500">
-                les mots de passe ne correspondent pas
-              </p>
-            )}
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                placeholder="Email"
+                onInput={(e) => setEmailQuery(e.target.value)}
+                {...register("email", { required: "Ce champ est requis" })}
+              />
+              {errors.email && (
+                <p className="text-xs text-red-500">{errors.email.message}</p>
+              )}
+            </div>
 
-            {!isLoading ? (
-              <Button className="text-white cursor-pointer bg-primary" asChild>
-                <input type="submit" value="poster" />
-              </Button>
-            ) : (
-              <Button disabled>
-                <Loader2 className="animate-spin" />
-                Please wait
-              </Button>
-            )}
+            <div>
+              <Label htmlFor="password">Mot de passe</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Mot de passe"
+                {...register("password", { required: "Ce champ est requis" })}
+              />
+              {errors.password && (
+                <p className="text-xs text-red-500">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full text-white bg-indigo-600 hover:bg-indigo-700"
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="animate-spin" /> : "S'inscrire"}
+            </Button>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-gray-500">
-            Déjà inscrit?{" "}
-            <Link to="/login" className="text-blue-500 hover:underline">
-              Connectez-vous
-            </Link>
-          </p>
+        <CardFooter className="text-center">
+          Déjà inscrit ?{" "}
+          <Link to="/login" className="text-indigo-500 hover:underline">
+            Connectez-vous
+          </Link>
         </CardFooter>
       </Card>
-      <Toaster />
     </div>
   );
 }

@@ -18,6 +18,7 @@ export const useAuthStore = create(
           return null;
         }
       },
+
       // fonction de recuperation de l'avatar
       getAvatar: async (id, token) => {
         try {
@@ -75,25 +76,6 @@ export const useAuthStore = create(
         });
 
         localStorage.removeItem("token");
-      },
-
-      // fonction pour verifier si l'utilisateur est dejà authentifié
-      isLogged: async () => {
-        const decodeToken = get().decodeToken;
-        const userInfo = decodeToken(jwtToken);
-        const jwtToken = (state) => state.token;
-        const user = (state) => state.user;
-
-        if (jwtToken && user) {
-          if (user == null) {
-            set({
-              token: jwtToken,
-              user: userInfo,
-            });
-          }
-        } else {
-          return false;
-        }
       },
     }),
     {
