@@ -8,7 +8,7 @@ export const createUserValidator = vine.compile(
     firstname: vine.string().trim().minLength(3).maxLength(255),
     lastname: vine.string().trim().minLength(3).maxLength(255),    
     gender: vine.enum(['male', 'female']),
-    birthdate: vine.date(),
+    birthdate: vine.date()
 })
 ) 
 
