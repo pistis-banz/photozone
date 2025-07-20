@@ -14,14 +14,18 @@ export default class UsersController {
     
         try {
             payload = await request.validateUsing(createUserValidator)
-            logger.info("payload is valid")
+            logger.info('Payload validé ✔')
+          } catch (error) {
+            logger.error('Validation échouée', error as any)
+          return response.status(400).send(error)
+        }
 
             const avatarFile = request.file('avatar', {
                 size: '5mb',
                 extnames: ['jpeg', 'jpg', 'png'],
               })
               if (!avatarFile) {
-                return response.badRequest({ error: 'Image missing' })
+                return response.badRequest({ error: 'avatar manquant' })
               }
               avatar = avatarFile
               
@@ -29,20 +33,22 @@ export default class UsersController {
 
               // creation des chemins pour l'avatar 
 
-              const thumbnailPath = `uploads/users/${userId}/avatar/thumbnail/${cuid()}.${avatarFile.extname}`
-              const avatarPath = `uploads/users/${userId}/avatar/original/${cuid()}.${avatarFile.extname}`
+              const paths = {
+                thumbnail: `uploads/users/${userId}/avatar/thumbnail/${cuid()}.${avatarFile.extname}`,
+                original:  `uploads/users/${userId}/avatar/original/${cuid()}.${avatarFile.extname}`,
+              }
 
               /* modification des dimensions de l'avatar avec sharp  */
-            
-              const thumbnail = avatarFile.tmpPath
-      ? sharp(avatarFile.tmpPath)
+            let thumbnail
+              try {
+                 thumbnail = sharp(avatarFile.tmpPath!)
           .resize(300, 300) // redimensionner en 300x300
           .toFormat('jpeg')
           .jpeg({ quality: 80 })
           .toBuffer()
-      :  null
-      
-      if (!thumbnail) {
+
+       } catch (error) {
+        logger.error('Erreur lors du traitement de l\'image', error as any)
         return response.badRequest({ error: 'Impossible de traiter l\'image' })
       }
       
@@ -50,15 +56,16 @@ export default class UsersController {
 
       // Sauvegarder le buffer avec Drive
       const disk = drive.use()
-      await disk.put(thumbnailPath, await thumbnail)
-      await avatarFile.moveToDisk(avatarPath)
-
-        } catch (error) {
-            console.log(error)
-          return response.status(400).send(error)
-        }
+      await disk.put(paths.thumbnail, await thumbnail)
+      await avatarFile.moveToDisk(paths.original)
      
-        return response.status(201).send(payload)
+        return response.status(201).send({
+          user: payload,
+          avatar: {
+            thumbnailUrl: disk.getUrl(paths.thumbnail),
+            originalUrl:  disk.getUrl(paths.original),
+          },
+        })
     }
 
     public async login({request, response}: HttpContext) {
@@ -67,7 +74,7 @@ export default class UsersController {
             payload = await request.validateUsing(loginValidator)
             logger.info("payload is valid")
         } catch (error) {
-            console.log(error)
+            logger.error('Validation échouée', error as any)
           return response.status(400).send(error)
         }
         return response.status(200).send(payload)
