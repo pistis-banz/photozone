@@ -1,20 +1,18 @@
 
+import FileService from '#services/FileService'
 import { createUserValidator, loginValidator } from '#validators/user'
 import { cuid } from '@adonisjs/core/helpers'
 import type { HttpContext } from '@adonisjs/core/http'
 import logger from '@adonisjs/core/services/logger'
-import drive from '@adonisjs/drive/services/main'
-import sharp from 'sharp'
-
 
 export default class UsersController {
     public async createUser({request, response}: HttpContext) {
-        let avatar: any = null
+
         let payload: any
     
         try {
             payload = await request.validateUsing(createUserValidator)
-            logger.info('Payload validé ✔')
+            logger.info('Payload validé')
           } catch (error) {
             logger.error('Validation échouée', error as any)
           return response.status(400).send(error)
@@ -27,43 +25,27 @@ export default class UsersController {
               if (!avatarFile) {
                 return response.badRequest({ error: 'avatar manquant' })
               }
-              avatar = avatarFile
-              
+
               const userId = cuid();
-
-              // creation des chemins pour l'avatar 
-
-              const paths = {
-                thumbnail: `uploads/users/${userId}/avatar/thumbnail/${cuid()}.${avatarFile.extname}`,
-                original:  `uploads/users/${userId}/avatar/original/${cuid()}.${avatarFile.extname}`,
-              }
-
-              /* modification des dimensions de l'avatar avec sharp  */
-            let thumbnail
+              let urls
+        
               try {
-                 thumbnail = sharp(avatarFile.tmpPath!)
-          .resize(300, 300) // redimensionner en 300x300
-          .toFormat('jpeg')
-          .jpeg({ quality: 80 })
-          .toBuffer()
-
-       } catch (error) {
-        logger.error('Erreur lors du traitement de l\'image', error as any)
-        return response.badRequest({ error: 'Impossible de traiter l\'image' })
-      }
-      
-
-
-      // Sauvegarder le buffer avec Drive
-      const disk = drive.use()
-      await disk.put(paths.thumbnail, await thumbnail)
-      await avatarFile.moveToDisk(paths.original)
-     
+                const baseFolder = `uploads/users/${userId}/posts/${cuid()}`
+                  urls = await FileService.processAndSaveImage({
+                  tmpPath:   avatarFile.tmpPath!,
+                  extname:   avatarFile.extname!,
+                  baseFolder,
+                  maxSize:   { width: 600, height: 400 }, // à adapter
+                  quality:   85,
+                }) } catch (error) {
+                  return response.badRequest({ error: 'Erreur lors du traitement de l’image' })
+                }
+          console.log(urls.thumbnailUrl)
         return response.status(201).send({
           user: payload,
           avatar: {
-            thumbnailUrl: disk.getUrl(paths.thumbnail),
-            originalUrl:  disk.getUrl(paths.original),
+            thumbnailUrl: urls.thumbnailUrl,
+            originalUrl:  urls.originalUrl,
           },
         })
     }
