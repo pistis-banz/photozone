@@ -7,13 +7,38 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+client
 client/node_modules
 client/dist
 client/dist-ssr
+client/.env 
 server/node_modules   
 server/uploads/users/                    
 server/.env
+server/.env.example
 *.local
+
+# Dependencies and AdonisJS build
+server/node_modules
+server/build
+server/tmp
+
+# Secrets
+server/.env
+server/.env.local
+server/.env.production.local
+server/.env.development.local
+
+# Build tools specific
+server/npm-debug.log
+server/yarn-error.log
+
+# Editors specific
+.fleet
+.idea
+.vscode
+
+
 
 # Editor directories and files
 .vscode/*

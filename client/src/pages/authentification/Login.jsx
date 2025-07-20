@@ -45,7 +45,7 @@ export default function Login() {
         } finally {
           toast.success(`vous etes connecté`);
           setIsLoading(false);
-
+ 
           setTimeout(() => {
             navigate("/");
           }, 500);
@@ -157,3 +157,5 @@ export default function Login() {
     </div>
   );
 }
+
+

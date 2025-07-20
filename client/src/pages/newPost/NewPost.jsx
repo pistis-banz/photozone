@@ -8,14 +8,18 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Upload } from "lucide-react";
+import { useAuthStore } from "@/stores/auth.store";
+import { Loader2, Plus, Upload } from "lucide-react";
 import { useState } from "react";
-
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
 
 export default function NewPost() {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const token = useAuthStore((state) => state.token);
 
   const {
     register,
@@ -25,8 +29,33 @@ export default function NewPost() {
   } = useForm();
 
   const onSubmit = (data) => {
+    const formData = new FormData();
+    Object.keys(data).forEach((key) => formData.append(key, data[key]));
+    formData.append("postImage", data.postImage[0]);
+
+    setIsLoading(true);
+    fetch("http://localhost:3000/post", {
+      method: "POST",
+      headers: {
+        "authorization": `bearer ${token}`
+      },
+      body: formData,
+    })
+      .then(async (response) => {
+        setIsLoading(false);
+
+        if (response.ok) {
+          setIsLoading(false);
+          toast.success("succès !");
+        }
+      })
+      .catch(() => {
+        setIsLoading(false);
+        toast.error("Une erreur s'est produite lors de l'inscription");
+      });
+
     console.log(data);
-    setOpen(false);
+    // setOpen(false);
   };
 
   const handleImageUpload = (e) => {
@@ -36,7 +65,7 @@ export default function NewPost() {
       setSelectedImage(URL.createObjectURL(file));
     }
   };
-  console.log(open);
+
   return (
     <div>
       {/* boite de dialogue du formulaire */}
@@ -115,7 +144,7 @@ export default function NewPost() {
                         accept="image/*"
                         onInput={handleImageUpload}
                         id="file"
-                        {...register("file", { required: true })}
+                        {...register("postImage", { required: true })}
                       />
                     </Button>
                   </Label>
@@ -125,8 +154,16 @@ export default function NewPost() {
             {errors.file && (
               <p className="text-red-500">veuiller deposer une photo</p>
             )}
-            <Button className="text-white cursor-pointer bg-primary" asChild>
-              <input type="submit" value="poster" />
+            <Button
+              className="text-white cursor-pointer bg-primary"
+              disabled={isLoading}
+              asChild
+            >
+              {isLoading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <input type="submit" value="poster" />
+              )}
             </Button>
           </form>
         </DialogContent>

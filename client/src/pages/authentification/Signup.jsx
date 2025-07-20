@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import useDebouncing from "@/hooks/usedeboucing";
+import ky from "ky";
 
 const validateFile = (file) => {
   const allowedExtensions = ["jpg", "jpeg", "png"];
@@ -61,86 +61,87 @@ export default function Signup() {
     setSelectedImage(URL.createObjectURL(file));
   };
 
-  useEffect(() => {
-    const controller = new AbortController();
+  // useEffect(() => {
+  //   const controller = new AbortController();
 
-    if (usernameQuery) {
-      fetch(`http://localhost:3000/user/username/${usernameQuery}`, {
-        method: "GET",
-        signal: controller.signal,
-      })
-        .then((response) => {
-          if (!response.ok && response.status === 400) {
-            setError("username", {
-              type: "manual",
-              message: "Ce nom d'utilisateur est déjà utilisé",
-            });
-          }
-        })
-        .catch((error) => {
-          if (error.name !== "AbortError") {
-            console.error(error);
-          }
-        });
-    }
+  //   if (usernameQuery) {
+  //     fetch(`http://localhost:3000/user/username/${usernameQuery}`, {
+  //       method: "GET",
+  //       signal: controller.signal,
+  //     })
+  //       .then((response) => {
+  //         if (!response.ok && response.status === 400) {
+  //           setError("username", {
+  //             type: "manual",
+  //             message: "Ce nom d'utilisateur est déjà utilisé",
+  //           });
+  //         }
+  //       })
+  //       .catch((error) => {
+  //         if (error.name !== "AbortError") {
+  //           console.error(error);
+  //         }
+  //       });
+  //   }
 
-    return () => controller.abort();
-  }, [useDebouncing(usernameQuery, 500)]);
+  //   return () => controller.abort();
+  // }, [useDebouncing(usernameQuery, 500)]);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  // useEffect(() => {
+  //   const controller = new AbortController();
 
-    if (emailQuery) {
-      fetch(`http://localhost:3000/user/email/${emailQuery}`, {
-        method: "GET",
-        signal: controller.signal,
-      })
-        .then((response) => {
-          if (!response.ok && response.status === 400) {
-            setError("email", {
-              type: "manual",
-              message: "Cette adresse email est déjà utilisée",
-            });
-          }
-        })
-        .catch((error) => {
-          if (error.name !== "AbortError") {
-            console.error(error);
-          }
-        });
-    }
+  //   if (emailQuery) {
+  //     fetch(`http://localhost:3000/user/email/${emailQuery}`, {
+  //       method: "GET",
+  //       signal: controller.signal,
+  //     })
+  //       .then((response) => {
+  //         if (!response.ok && response.status === 400) {
+  //           setError("email", {
+  //             type: "manual",
+  //             message: "Cette adresse email est déjà utilisée",
+  //           });
+  //         }
+  //       })
+  //       .catch((error) => {
+  //         if (error.name !== "AbortError") {
+  //           console.error(error);
+  //         }
+  //       });
+  //   }
 
-    return () => controller.abort();
-  }, [useDebouncing(emailQuery, 500)]);
+  //   return () => controller.abort();
+  // }, [useDebouncing(emailQuery, 500)]);
 
-  const onSubmit = (data) => {
-    setIsLoading(true);
 
-    const formData = new FormData();
-    Object.keys(data).forEach((key) => formData.append(key, data[key]));
-    formData.append("avatar", data.avatar[0]);
+const onSubmit = async (data) => {
+  setIsLoading(true);
 
-    fetch("http://localhost:3000/user/register", {
-      method: "POST",
+  const formData = new FormData();
+  Object.keys(data).forEach((key) => formData.append(key, data[key]));
+  formData.append('avatar', data.avatar[0]);
+
+  try {
+    await ky.post('http://localhost:3000/user/register', {
       body: formData,
-    })
-      .then(async (response) => {
-        setIsLoading(false);
+    });
 
-        if (response.ok) {
-          toast.success("Compte créé avec succès !");
-          toast.success("vous pouvez maintenant vous connectez");
-          navigate("/login");
-        } else {
-          const errorData = await response.json();
-          toast.error(errorData.message || "Une erreur s'est produite");
-        }
-      })
-      .catch(() => {
-        setIsLoading(false);
-        toast.error("Une erreur s'est produite lors de l'inscription");
-      });
-  };
+    setIsLoading(false);
+    toast.success("Compte créé avec succès !");
+    toast.success("vous pouvez maintenant vous connectez");
+    navigate("/login");
+  } catch (error) {
+    setIsLoading(false);
+
+    if (error.response) {
+      const errorData = await error.response.json();
+      toast.error(errorData.message || "Une erreur s'est produite");
+    } else {
+      toast.error("Une erreur s'est produite lors de l'inscription");
+    }
+  }
+};
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">

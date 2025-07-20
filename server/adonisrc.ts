@@ -45,6 +45,7 @@ export default defineConfig({
     },
     () => import('@adonisjs/core/providers/vinejs_provider'),
     () => import('@adonisjs/cors/cors_provider'),
+    () => import('@adonisjs/drive/drive_provider')
   ],
 
   /*
@@ -55,7 +56,7 @@ export default defineConfig({
   | List of modules to import before starting the application.
   |
   */
-  preloads: [() => import('#start/routes'), () => import('#start/kernel')],
+  preloads: [() => import('#start/routes'), () => import('#start/kernel'), () => import('#start/validator')],
 
   /*
   |--------------------------------------------------------------------------
